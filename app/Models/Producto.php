@@ -79,14 +79,9 @@ class Producto extends Model
         return $this->belongsTo(Categoria::class, "id_categoria");
     }
 
-    public function atributo()
+    public function atributos_producto()
     {
-        return $this->belongsToMany(
-            Atributo::class,
-            "atributos_productos",
-            "id_producto",
-            "id_atributo"
-        )->withPivot("valor_unidad_medida");
+        return $this->hasMany(AtributosProducto::class, "id_producto");
     }
 
     public function precios_producto()

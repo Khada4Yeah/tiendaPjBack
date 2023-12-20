@@ -18,6 +18,20 @@ class Atributo extends Model
 
     protected $fillable = ["id_categoria", "nombre", "unidad_de_medida"];
 
+    protected $hidden = [
+        "id_atributo",
+        "id_categoria",
+        "nombre",
+        "unidad_de_medida",
+    ];
+
+    protected $appends = [
+        "attributeId",
+        "categoryId",
+        "attributeName",
+        "unitOfMeasure",
+    ];
+
     public function fromDateTime($value)
     {
         return Carbon::parse(parent::fromDateTime($value))->format(
@@ -30,13 +44,28 @@ class Atributo extends Model
         return $this->belongsTo(Categoria::class, "id_categoria");
     }
 
-    public function producto()
+    public function atributos_producto()
     {
-        return $this->belongsToMany(
-            Producto::class,
-            "atributos_productos",
-            "id_atributo",
-            "id_producto"
-        )->withPivot("valor_unidad_medida");
+        return $this->hasMany(AtributosProducto::class, "id_atributo_producto");
+    }
+
+    public function getAttributeIdAttribute()
+    {
+        return $this->attributes["id_atributo"];
+    }
+
+    public function getCategoryIdAttribute()
+    {
+        return $this->attributes["id_categoria"];
+    }
+
+    public function getAttributeNameAttribute()
+    {
+        return $this->attributes["nombre"];
+    }
+
+    public function getUnitOfMeasureAttribute()
+    {
+        return $this->attributes["unidad_de_medida"];
     }
 }

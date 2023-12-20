@@ -79,6 +79,12 @@ Route::resource("atributos", AtributoController::class, [
     "except" => ["create", "edit"],
 ]);
 
+//** Obtener los atributos por categoria */
+Route::get("atributos/atributosPorCategoria/{idCategoria}", [
+    AtributoController::class,
+    "obtenerAtributosPorCategoria",
+]);
+
 //?? RUTAS DE ATRIBUTOS_PRODUCTOS ?/
 //** Resource de atributos_productos */
 Route::resource("atributos_productos", AtributosProductoController::class, [
@@ -92,10 +98,20 @@ Route::get("atributos/atributosPorCategoria/{idCategoria}", [
 ]);
 
 //?? RUTAS DE PRODUCTOS ?/
+//** Productos para el Home */
+Route::get("productos/indexHome", [ProductoController::class, "indexHome"]);
+
+//** Productos para la tabla del CMS */
+Route::get("productos/indexCms", [ProductoController::class, "indexCms"]);
+
+//** Cambiar estado del producto */
+Route::patch("productos/cambiarEstado/{idProducto}", [
+    ProductoController::class,
+    "cambiarEstadoProducto",
+]);
+
 //** Resource de productos */
 Route::apiResource("productos", ProductoController::class);
-
-Route::get("productos/indexHome", [ProductoController::class, "indexHome"]);
 
 //** Obtener todos los productos segun la categoria */
 Route::get("productos/productosCategoria/{idCategoria}", [

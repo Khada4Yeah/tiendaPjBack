@@ -14,18 +14,13 @@ class Marca extends Model
 
     protected $primaryKey = "id_marca";
 
+    protected $dateFormat = "Y-m-d\TH:i:s";
+
     protected $fillable = ["nombre", "created_at", "updated_at"];
 
     protected $hidden = ["id_marca", "nombre"];
 
     protected $appends = ["brandId", "brandName"];
-
-    public function fromDateTime($value)
-    {
-        return Carbon::parse(parent::fromDateTime($value))->format(
-            "Y-d-m H:i:s"
-        );
-    }
 
     public function producto()
     {

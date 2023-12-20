@@ -23,11 +23,7 @@ class CategoriaController extends Controller
     {
         $categorias = Categoria::orderBy("nombre", "asc")->get();
 
-        return response()->json([
-            "code" => 200,
-            "status" => "success",
-            "data" => $categorias,
-        ]);
+        return response()->json($categorias, 200);
     }
 
     /**
@@ -48,17 +44,19 @@ class CategoriaController extends Controller
 
             // VALIDAR DATOS
             $validar_datos = Validator::make($params_array, [
-                "nombre" => "required",
+                "categoryName" => "required|string",
+                "categoryDescription" => "required|string",
             ]);
 
             if ($validar_datos->fails()) {
                 // LA VALIDACION HA FALLADO
-                $data = [
-                    "code" => 400,
-                    "status" => "error",
-                    "message" => "Error al validar los datos",
-                    "errores" => $validar_datos->errors(),
-                ];
+                return response()->json(
+                    [
+                        "message" => "Error al validar los datos...",
+                        "errors" => $validar_datos->errors(),
+                    ],
+                    400
+                );
             } else {
                 try {
                     DB::beginTransaction();
@@ -67,42 +65,39 @@ class CategoriaController extends Controller
 
                     // CREAR LA CATEGORIA
                     $categoria = new Categoria();
-                    $categoria->nombre = mb_strtoupper($params_array["nombre"]);
-                    $categoria->descripcion = array_key_exists(
-                        "descripcion",
-                        $params_array
-                    )
-                        ? $params_array["descripcion"]
-                        : null;
+                    $categoria->nombre = mb_strtoupper(
+                        $params_array["categoryName"]
+                    );
+                    $categoria->descripcion =
+                        $params_array["categoryDescription"];
+                    $categoria->estado = "A";
 
                     // GUARDAR LA CATEGORIA
                     $categoria->save();
 
                     DB::commit();
 
-                    $data = [
-                        "code" => 200,
-                        "status" => "success",
-                    ];
+                    return response()->json($categoria, 201);
                 } catch (\Throwable $th) {
                     DB::rollBack();
 
-                    return response()->json([
-                        "code" => 400,
-                        "status" => "error",
-                        "message" => "Error al guardar los datos",
-                        "errores" => $th,
-                    ]);
+                    return response()->json(
+                        [
+                            "message" => "Error al guardar los datos...",
+                            "errores" => $th,
+                        ],
+                        400
+                    );
                 }
             }
         } else {
-            $data = [
-                "code" => 400,
-                "status" => "error",
-                "message" => "Error al enviar los datos",
-            ];
+            return response()->json(
+                [
+                    "message" => "Error al enviar los datos...",
+                ],
+                400
+            );
         }
-        return response()->json($data, 200);
     }
 
     /**

@@ -23,11 +23,7 @@ class AtributoController extends Controller
     {
         $atributos = Atributo::orderBy("nombre", "asc")->get();
 
-        return response()->json([
-            "code" => 200,
-            "status" => "success",
-            "data" => $atributos,
-        ]);
+        return response()->json($atributos, 200);
     }
 
     /**
@@ -48,19 +44,20 @@ class AtributoController extends Controller
 
             // VALIDAR DATOS
             $validar_datos = Validator::make($params_array, [
-                "id_categoria" => "required",
-                "nombre" => "required",
-                "unidad_de_medida" => "required",
+                "categoryId" => "required",
+                "attributeName" => "required",
+                "unitOfMeasure" => "required",
             ]);
 
             if ($validar_datos->fails()) {
                 // LA VALIDACION HA FALLADO
-                $data = [
-                    "code" => 400,
-                    "status" => "error",
-                    "message" => "Error al validar los datos",
-                    "errores" => $validar_datos->errors(),
-                ];
+                return response()->json(
+                    [
+                        "message" => "Error al validar los datos...",
+                        "errors" => $validar_datos->errors(),
+                    ],
+                    400
+                );
             } else {
                 try {
                     DB::beginTransaction();
@@ -69,39 +66,39 @@ class AtributoController extends Controller
 
                     // CREAR EL ATRIBUTO
                     $atributo = new Atributo();
-                    $atributo->id_categoria = $params_array["id_categoria"];
-                    $atributo->nombre = mb_strtoupper($params_array["nombre"]);
+                    $atributo->id_categoria = $params_array["categoryId"];
+                    $atributo->nombre = mb_strtoupper(
+                        $params_array["attributeName"]
+                    );
                     $atributo->unidad_de_medida =
-                        $params_array["unidad_de_medida"];
+                        $params_array["unitOfMeasure"];
 
                     // GUARDAR EL ATRIBUTO
                     $atributo->save();
 
                     DB::commit();
 
-                    $data = [
-                        "code" => 200,
-                        "status" => "success",
-                    ];
+                    return response()->json($atributo, 200);
                 } catch (\Throwable $th) {
                     DB::rollBack();
 
-                    return response()->json([
-                        "code" => 400,
-                        "status" => "error",
-                        "message" => "Error al guardar los datos",
-                        "errores" => $th,
-                    ]);
+                    return response()->json(
+                        [
+                            "message" => "Error al guardar los datos",
+                            "errors" => $th,
+                        ],
+                        400
+                    );
                 }
             }
         } else {
-            $data = [
-                "code" => 400,
-                "status" => "error",
-                "message" => "Error al enviar los datos",
-            ];
+            return response()->json(
+                [
+                    "message" => "Error al enviar los datos",
+                ],
+                400
+            );
         }
-        return response()->json($data, 200);
     }
 
     /**
@@ -150,10 +147,6 @@ class AtributoController extends Controller
             ->orderBy("nombre", "asc")
             ->get();
 
-        return response()->json([
-            "code" => 200,
-            "status" => "success",
-            "data" => $atributos,
-        ]);
+        return response()->json($atributos, 200);
     }
 }

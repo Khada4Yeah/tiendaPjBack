@@ -23,11 +23,7 @@ class ProveedorController extends Controller
     {
         $proveedores = Proveedor::orderBy("nombre", "asc")->get();
 
-        return response()->json([
-            "code" => 200,
-            "status" => "success",
-            "data" => $proveedores,
-        ]);
+        return response()->json($proveedores, 200);
     }
 
     /**
@@ -48,21 +44,24 @@ class ProveedorController extends Controller
 
             // VALIDAR DATOS
             $validar_datos = Validator::make($params_array, [
-                "nombre" => "required",
-                "direccion" => "required",
-                "telefono" => "required|size:9",
-                "celular" => "required|size:10",
-                "correo_electronico" => "required|email",
+                "providerName" => "required",
+                "providerAddress" => "required",
+                "providerPhone" => "required|size:9",
+                "providerCellphone" => "required|size:10",
+                "providerEmail" => "required|email",
+                "providerDescription" => "required",
             ]);
 
             if ($validar_datos->fails()) {
                 // LA VALIDACION HA FALLADO
-                $data = [
-                    "code" => 400,
-                    "status" => "error",
-                    "message" => "Error al validar los datos",
-                    "errores" => $validar_datos->errors(),
-                ];
+
+                return response()->json(
+                    [
+                        "message" => "Error al validar los datos...",
+                        "errors" => $validar_datos->errors(),
+                    ],
+                    400
+                );
             } else {
                 try {
                     DB::beginTransaction();
@@ -71,42 +70,42 @@ class ProveedorController extends Controller
 
                     // CREAR EL PROVEEDOR
                     $proveedor = new Proveedor();
-                    $proveedor->nombre = mb_strtoupper($params_array["nombre"]);
-                    $proveedor->direccion = $params_array["direccion"];
-                    $proveedor->telefono = $params_array["telefono"];
-                    $proveedor->celular = $params_array["celular"];
+                    $proveedor->nombre = mb_strtoupper(
+                        $params_array["providerName"]
+                    );
+                    $proveedor->direccion = $params_array["providerAddress"];
+                    $proveedor->telefono = $params_array["providerPhone"];
+                    $proveedor->celular = $params_array["providerCellphone"];
                     $proveedor->correo_electronico =
-                        $params_array["correo_electronico"];
-                    $proveedor->descripcion = $params_array["descripcion"];
+                        $params_array["providerEmail"];
+                    $proveedor->descripcion =
+                        $params_array["providerDescription"];
+                    $proveedor->estado = "A";
 
                     // GUARDAR EL PROVEEDOR
                     $proveedor->save();
 
                     DB::commit();
 
-                    $data = [
-                        "code" => 200,
-                        "status" => "success",
-                    ];
+                    return response()->json($proveedor, 201);
                 } catch (\Throwable $th) {
                     DB::rollBack();
 
-                    return response()->json([
-                        "code" => 400,
-                        "status" => "error",
-                        "message" => "Error al guardar los datos",
-                        "errores" => $th,
-                    ]);
+                    return response()->json(
+                        [
+                            "message" => "Error al guardar los datos...",
+                            "errors" => $th,
+                        ],
+                        400
+                    );
                 }
             }
         } else {
-            $data = [
-                "code" => 400,
-                "status" => "error",
-                "message" => "Error al enviar los datos",
-            ];
+            return response()->json(
+                ["message" => "Error al enviar los datos"],
+                400
+            );
         }
-        return response()->json($data, 200);
     }
 
     /**

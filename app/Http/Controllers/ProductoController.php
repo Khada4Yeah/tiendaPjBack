@@ -30,26 +30,50 @@ class ProductoController extends Controller
             "categoria",
             "proveedor",
             "marca",
-            "precios_producto" => function ($query) {
-                $query
-                    ->select("*")
-                    ->whereIn("id_precio_producto", function ($subquery) {
-                        $subquery
-                            ->select(DB::raw("MAX(id_precio_producto)"))
-                            ->from("precios_productos")
-                            ->groupBy("id_producto");
-                    });
-            },
+            "precios_producto",
             "inventario_producto",
-            "atributo" => function ($query) {
-                $query->select(
-                    "atributos.id_atributo",
-                    "id_categoria",
-                    "nombre AS attributeName",
-                    "unidad_de_medida AS unitOfMeasurement"
-                );
-            },
+            "atributos_producto.atributo",
         ])->paginate(10);
+
+        $productos->getCollection()->transform(function ($producto) {
+            $producto->setAttribute("categoryProduct", $producto->categoria);
+            unset($producto->categoria);
+
+            $producto->setAttribute("providerProduct", $producto->proveedor);
+            unset($producto->proveedor);
+
+            $producto->setAttribute("brandProduct", $producto->marca);
+            unset($producto->marca);
+
+            $producto->setAttribute(
+                "pricesProduct",
+                $producto->precios_producto
+            );
+            unset($producto->precios_producto);
+
+            $producto->setAttribute(
+                "product_inventory",
+                $producto->inventario_producto
+            );
+            unset($producto->inventario_producto);
+
+            // Mapear los atributos sin eliminar la relación "atributo"
+            $producto->setAttribute(
+                "attributesProduct",
+                $producto->atributos_producto->map(function ($atr) {
+                    return [
+                        "attribute" => $atr->atributo,
+                        "productAtributesId" => $atr->productAtributesId,
+                        "productId" => $atr->productId,
+                        "attributeId" => $atr->attributeId,
+                        "valueUnitMeasure" => $atr->valueUnitMeasure,
+                    ];
+                })
+            );
+            unset($producto->atributos_producto);
+
+            return $producto;
+        });
 
         $filteredProducts = collect($productos)
             ->except([
@@ -66,9 +90,6 @@ class ProductoController extends Controller
                 "to",
             ])
             ->values();
-
-        //var_dump($filteredProducts);
-        // die();
 
         return response()->json($filteredProducts, 200);
     }
@@ -95,6 +116,47 @@ class ProductoController extends Controller
                 "pp.precio_venta_sin_iva AS salePriceWoIva",
                 "pp.porcentaje_iva_venta AS ivaPercentage"
             )
+            ->get();
+
+        $filteredProducts = collect($productos)
+            ->except([
+                "current_page",
+                "first_page_url",
+                "from",
+                "last_page",
+                "last_page_url",
+                "links",
+                "next_page_url",
+                "path",
+                "per_page",
+                "prev_page_url",
+                "to",
+            ])
+            ->values();
+
+        return response()->json($filteredProducts, 200);
+    }
+
+    /**
+     * Obtener todos los productos para la tabla CMS
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function indexCms()
+    {
+        $productos = DB::table("productos", "p")
+            ->join("marcas AS m", "m.id_marca", "p.id_marca")
+            ->select(
+                "p.id_producto AS productId",
+                "p.nombre AS productName",
+                "p.EAN AS productCode",
+                "p.descripcion AS productDescription",
+                "p.modelo AS productModel",
+                "p.ruta_imagen AS productImageUrl",
+                "p.estado AS productStatus",
+                "m.nombre AS brandName"
+            )
+            ->orderBy("p.nombre", "ASC")
             ->get();
 
         return response()->json($productos, 200);
@@ -366,12 +428,40 @@ class ProductoController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Producto  $producto
+     * @param  Producto $producto
      * @return \Illuminate\Http\Response
      */
     public function destroy(Producto $producto)
     {
-        //
+    }
+
+    /**
+     * Cambiar estado del producto
+     *
+     * @param  int $idProducto
+     * @return \Illuminate\Http\Response
+     */
+
+    public function cambiarEstadoProducto($idProducto)
+    {
+        $producto = Producto::find($idProducto);
+
+        if ($producto) {
+            $producto->estado = $producto->estado == "A" ? "I" : "A";
+            $producto->save();
+
+            return response()->json([
+                "code" => 200,
+                "status" => "success",
+                "message" => "Estado del producto actualizado correctamente",
+            ]);
+        } else {
+            return response()->json([
+                "code" => 404,
+                "status" => "error",
+                "message" => "El producto no existe",
+            ]);
+        }
     }
 
     /**
@@ -418,31 +508,5 @@ class ProductoController extends Controller
     public function obtenerProductosAtributos()
     {
         //
-    }
-
-    /**
-     * Obtener la imagen del producto
-     *
-     * @return Illuminate\Database\Eloquent\Collection
-     */
-    public function obtenerImagenProducto($rutaImagen)
-    {
-        // COMPROBAR SI EXISTE EL FICHERO
-        $isset = Storage::disk("local")->exists(
-            "public/productos/" . $rutaImagen
-        );
-
-        if ($isset) {
-            // CONSEGUIR LA IMAGEN
-            $path = storage_path("app/public/productos/" . $rutaImagen);
-
-            $file = File::get($path);
-            $type = File::mimeType($path);
-            $response = response($file, 200);
-            $response->header("Content-Type", $type);
-            return $response;
-        } else {
-            abort(404);
-        }
     }
 }

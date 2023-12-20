@@ -14,6 +14,8 @@ class Proveedor extends Model
 
     protected $primaryKey = "id_proveedor";
 
+    protected $dateFormat = "Y-m-d\TH:i:s";
+
     protected $fillable = [
         "nombre",
         "direccion",
@@ -47,13 +49,6 @@ class Proveedor extends Model
         "providerDescription",
         "providerStatus",
     ];
-
-    public function fromDateTime($value)
-    {
-        return Carbon::parse(parent::fromDateTime($value))->format(
-            "Y-d-m H:i:s"
-        );
-    }
 
     public function producto()
     {

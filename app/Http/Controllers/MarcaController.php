@@ -23,11 +23,7 @@ class MarcaController extends Controller
     {
         $marcas = Marca::orderBy("nombre", "asc")->get();
 
-        return response()->json([
-            "code" => 200,
-            "status" => "success",
-            "data" => $marcas,
-        ]);
+        return response()->json($marcas, 200);
     }
 
     /**
@@ -48,17 +44,18 @@ class MarcaController extends Controller
 
             // VALIDAR DATOS
             $validar_datos = Validator::make($params_array, [
-                "nombre" => "required",
+                "brandName" => "required",
             ]);
 
             if ($validar_datos->fails()) {
                 // LA VALIDACION HA FALLADO
-                $data = [
-                    "code" => 400,
-                    "status" => "error",
-                    "message" => "Error al validar los datos",
-                    "errores" => $validar_datos->errors(),
-                ];
+                return response()->json(
+                    [
+                        "message" => "Error al validar los datos...",
+                        "errors" => $validar_datos->errors(),
+                    ],
+                    400
+                );
             } else {
                 try {
                     DB::beginTransaction();
@@ -67,36 +64,39 @@ class MarcaController extends Controller
 
                     // CREAR LA MARCA
                     $marca = new Marca();
-                    $marca->nombre = mb_strtoupper($params_array["nombre"]);
+                    $marca->nombre = mb_strtoupper($params_array["brandName"]);
 
                     // GUARDAR LA MARCA
                     $marca->save();
 
                     DB::commit();
 
-                    $data = [
-                        "code" => 200,
-                        "status" => "success",
-                    ];
+                    return response()->json(
+                        [
+                            "status" => "success",
+                        ],
+                        201
+                    );
                 } catch (\Throwable $th) {
                     DB::rollBack();
 
-                    return response()->json([
-                        "code" => 400,
-                        "status" => "error",
-                        "message" => "Error al guardar los datos",
-                        "errores" => $th,
-                    ]);
+                    return response()->json(
+                        [
+                            "message" => "Error al guardar los datos...",
+                            "errores" => $th,
+                        ],
+                        400
+                    );
                 }
             }
         } else {
-            $data = [
-                "code" => 400,
-                "status" => "error",
-                "message" => "Error al enviar los datos",
-            ];
+            return response()->json(
+                [
+                    "message" => "Error al enviar los datos",
+                ],
+                400
+            );
         }
-        return response()->json($data, 200);
     }
 
     /**
