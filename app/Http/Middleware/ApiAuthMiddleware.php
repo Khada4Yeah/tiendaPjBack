@@ -26,11 +26,12 @@ class ApiAuthMiddleware
         if ($check_token) {
             return $next($request);
         } else {
-            return response()->json([
-                "code" => 400,
-                "status" => "error",
-                "message" => "El usuario no esta indentificado",
-            ]);
+            return response()->json(
+                [
+                    "message" => "El usuario no esta autenticado.",
+                ],
+                401
+            );
         }
     }
 }
